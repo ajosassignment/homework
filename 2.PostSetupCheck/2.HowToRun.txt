@@ -1,0 +1,9 @@
+
+
+# Checkout the the yaml and script files from github
+# Run following command from command prompt for post deploy environment check
+
+
+ansible-playbook postdeploy.yaml
+
+

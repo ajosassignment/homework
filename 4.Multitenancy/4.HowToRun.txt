@@ -1,0 +1,8 @@
+# Checkout the the yaml and script files from github
+# Run following command from command prompt to create multitenancy
+
+
+ansible-playbook create-multitenancy.yaml
+
+
+

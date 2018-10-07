@@ -1,0 +1,114 @@
+
+- hosts: localhost
+  name: cicd-pripe line assignment task
+  tasks:
+      - name: create cicd-pripe line demo
+        shell: |
+          oc login -u system:admin
+          oc new-project cicd-dev --description="cicd demo" --display-name="CICD-DEV Project"
+          oc new-app jenkins-persistent -p ENABLE_OAUTH=false -p MEMORY_LIMIT=2Gi -n cicd-dev
+          oc adm policy add-role-to-user edit andrew
+          
+      - debug: msg="Jenkins login and password is admin , password"
+      - debug: msg="Pausing for 1 minute for build to complete"
+ 
+      - pause: seconds=60
+      
+- hosts: localhost
+  tasks:
+      - name: create tasks* projects
+        shell: |
+          oc new-project tasks-build
+          oc adm policy add-role-to-user edit andrew
+          oc new-project tasks-dev
+          oc adm policy add-role-to-user edit andrew
+          oc new-project tasks-test
+          oc adm policy add-role-to-user edit andrew
+          oc new-project tasks-prod
+          oc adm policy add-role-to-user edit andrew
+          
+      - debug: msg="Projects tasks-build, tasks-dev, tasks-test and tasks-prod are created. "          
+
+- hosts: localhost		  
+  tasks:
+      - name: Allow jenkins to build in tasks-build project and deploy in the tasks-dev,tasks-test and tasks-prod projects
+        shell: |
+          oc policy add-role-to-user edit system:serviceaccount:cicd-dev:jenkins -n tasks-build     
+          oc policy add-role-to-user edit system:serviceaccount:cicd-dev:jenkins -n tasks-dev
+          oc policy add-role-to-user edit system:serviceaccount:cicd-dev:jenkins -n tasks-test
+          oc policy add-role-to-user edit system:serviceaccount:cicd-dev:jenkins -n tasks-prod
+          
+
+- hosts: localhost		  
+  tasks:
+      - name: Allow tasks-dev, tasks-test and tasks-prod projects to pull images from tasks-build project
+        shell: |
+          oc policy add-role-to-group system:image-puller system:serviceaccounts:tasks-dev -n tasks-build
+          oc policy add-role-to-group system:image-puller system:serviceaccounts:tasks-test -n tasks-build
+          oc policy add-role-to-group system:image-puller system:serviceaccounts:tasks-prod -n tasks-build
+
+- hosts: localhost          
+  tasks:
+      - name: Use tasks-build project only for  building openshift-tasks application
+        shell: |
+          oc create -f tasks-bc.yaml -n tasks-build
+          oc create -f createis.yaml -n tasks-build
+          
+      - debug: msg="Pausing for 1 minute for build to complete in tasks-build project"
+ 
+      - pause: seconds=60
+      
+- hosts: localhost          
+  tasks:
+      - name: Create testready and prodready tag from the newly built image
+        shell: |
+          oc tag openshift-tasks:latest openshift-tasks:devready -n tasks-build
+          oc tag openshift-tasks:devready openshift-tasks:testready -n tasks-build
+          oc tag openshift-tasks:testready openshift-tasks:prodready -n tasks-build
+          
+      - debug: msg="Pausing for 1 minute forcreating tag"
+ 
+      - pause: seconds=60
+          
+- hosts: localhost          
+  tasks:
+      - name: Deploy devready, testready and prodready tag from the newly built image to dev, test and prod
+        shell: |
+          oc new-app tasks-build/openshift-tasks:devready --name=openshift-tasks -n tasks-dev
+          oc new-app tasks-build/openshift-tasks:testready --name=openshift-tasks -n tasks-test
+          oc new-app tasks-build/openshift-tasks:prodready --name=openshift-tasks -n tasks-prod
+          
+      - debug: msg="Pausing for 1 minute for build to complete initial deployment in dev, test and prod project"
+ 
+      - pause: seconds=60          
+      
+- hosts: localhost      
+  tasks:
+      - name: Create routes for openshift-tasks application in  dev, test and prod
+        shell: |
+          oc expose svc/openshift-tasks -n tasks-dev
+          oc expose svc/openshift-tasks -n tasks-test
+          oc expose svc/openshift-tasks -n tasks-prod
+  
+- hosts: localhost      
+  tasks:
+      - name: change triggeres to manual
+        shell: |
+          oc set triggers dc openshift-tasks --manual -n tasks-dev
+          oc set triggers dc openshift-tasks --manual -n tasks-test
+          oc set triggers dc openshift-tasks --manual -n tasks-prod
+          
+          
+- hosts: localhost      
+  tasks:
+      - name: Deploy pipeline task
+        shell: oc create -f assign-pipeline-demo.yaml -n cicd-dev        
+
+      - debug: msg="Pausing for 1 minute for deploy pipeline task to complete" 
+      - pause: seconds=30
+      
+      - name: Start pipeline
+        shell: oc start-build assign-pipeline-demo -n cicd-dev
+        
+      - debug: msg="Pipe line build in progress. Please check status in tasks-build project."
+      - pause: seconds=90

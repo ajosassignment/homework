@@ -1,0 +1,69 @@
+- hosts: localhost
+  name: Prepare GUID env variable across all hosts
+  tasks:
+    - name: All GUID env variable
+      shell: export GUID=`hostname | cut -d"." -f2`; echo "export GUID=$GUID" >> $HOME/.bashrc
+
+- hosts: localhost
+  name: Verify OpenShift Cluster
+  tasks:
+    - name: copy the .kube directory from master1 to your bastion
+      script: fetchkubefile.sh
+
+#- hosts: masters[0]
+#  name: Verify OpenShift Cluster
+#  tasks:
+#    - name: copy the .kube directory from master1 to your bastion
+#      copy: 
+#        src: /root/.kube/config
+#        dest: /root/.kube/config
+#        mode: 0774
+
+- hosts: localhost
+  name: Basic sanity check
+  tasks:
+      - name: login
+        shell: oc login -u system:admin
+
+- hosts: nfs
+  name: Create PVs for Users
+  tasks:
+    - name:
+      script: createnfspvs.sh
+    - name: Restarting NFS Server
+      shell: systemctl restart nfs-server
+
+- hosts: localhost
+  name: Create definitions files for PVs 5G/10G size
+  tasks:
+    - name: Create 25 def files for PVs 5G size
+      script: pvs5Gsize.sh
+
+    - name: Create 25 def files for PVs 10G size
+      script: pvs10Gsize.sh
+
+- hosts: localhost
+  name: HA Requirements check
+  tasks:
+  - name: 3 etcd instances are working
+    shell: oc get componentstatus | grep etcd
+  - name: load balancer to access the masters
+    shell: oc login -u system:admin
+  - name: load balancer or DNS for both infra nodes
+    shell: |
+      host test.apps.$GUID.example.opentlc.com
+  - name: at least two infranodes
+    shell: oc get nodes --show-labels | grep env=infra
+
+- hosts: localhost
+  name: Basic requirement sanity check
+  tasks:
+      - name: create smoke-test project
+        shell: |
+          #oc login -u andrew -p r3dh4t1!
+          oc new-project smoke-test
+          oc adm policy add-role-to-user edit andrew
+          oc new-app nodejs-mongo-persistent
+
+
+

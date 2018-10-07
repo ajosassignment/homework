@@ -1,0 +1,17 @@
+- hosts: localhost
+  name: Create limit range
+  tasks:
+  - name: login as system:admin
+    shell: oc login -u system:admin
+  - name: Create limit range for tasks-prod  project
+    script: limit-range.sh
+    
+- hosts: localhost
+  name: Create tasks-hpa
+  tasks:  
+  - name: login as app user
+    shell: oc login -u andrew -p r3dh4t1!  
+  - name: Create hpa for tasks-prod project
+    shell: oc create -f tasks-hpa.yaml
+  - name: Rollout latest version
+    shell: oc rollout latest openshift-tasks -n tasks-prod

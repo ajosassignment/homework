@@ -1,0 +1,18 @@
+
+
+# Checkout the the yaml and script files from github
+# Run following command from command prompt to create various projects 
+# deploy openshift-task to dev, test and prod project after building the 
+# image in tasks-build project.
+
+# devready, testready, prodready tag will be created from new image
+
+
+ansible-playbook create-pipeline-proj.yaml
+
+
+#HPA working on production deployment of openshift-tasks in project tasks-prod
+
+ansible-playbook create-task-hpa.yaml
+
+

@@ -1,0 +1,92 @@
+---
+- hosts: localhost
+  name: Login as system:admin
+  tasks:
+    - name: login as system:admin
+      shell: oc login -u system:admin
+          
+- hosts: localhost
+  tasks:
+    - name: change property os_sdn_network_plugin_name from openshift-ovs-networkpolicy to openshift-ovs-multitenant in inventory 
+      replace:
+        path: /etc/ansible/hosts
+        regexp: 'openshift-ovs-networkpolicy'
+        replace: 'openshift-ovs-multitenant'
+
+- hosts: masters
+  tasks:
+    - name: change openshift-ovs-networkpolicy to openshift-ovs-multitenant for masters
+      replace:
+        path: /etc/origin/master/master-config.yaml
+        regexp: 'openshift-ovs-networkpolicy'
+        replace: 'openshift-ovs-multitenant'
+
+- hosts: nodes
+  tasks:
+    - name: change openshift-ovs-networkpolicy to openshift-ovs-multitenant for nodes
+      replace:
+        path: /etc/origin/node/node-config.yaml
+        regexp: 'openshift-ovs-networkpolicy'
+        replace: 'openshift-ovs-multitenant'
+
+- hosts: masters
+  tasks:
+    - name: stop atomic-openshift-master-api
+      systemd:
+        state: stopped
+        name: atomic-openshift-master-api
+    - name: stop atomic-openshift-master-controllers
+      systemd:
+        state: stopped
+        name: atomic-openshift-master-controllers
+
+    - debug: msg="Pausing 1 minute stop atomic-openshift-master-api"
+ 
+    - pause: seconds=60
+      
+- hosts: nodes
+  tasks:
+    - name: stop atomic-openshift-node
+      systemd:
+        state: stopped
+        name: atomic-openshift-node
+    - name: restart openvswitch
+      systemd:
+        state: restarted
+        name: openvswitch
+    - debug: msg="Pausing 1 minute stop atomic-openshift-node"
+ 
+    - pause: seconds=60
+      
+- hosts: masters
+  tasks:
+    - name: start atomic-openshift-master-api
+      systemd:
+        state: started
+        name: atomic-openshift-master-api
+    - debug: msg="Pausing 1 minute start atomic-openshift-master-api"
+ 
+    - pause: seconds=60        
+    - name: start atomic-openshift-master-controllers
+      systemd:
+        state: started
+        name: atomic-openshift-master-controllers
+    - debug: msg="Pausing 1 minute start atomic-openshift-master-controllers"
+ 
+    - pause: seconds=60
+      
+- hosts: nodes
+  tasks:
+    - name: start atomic-openshift-node
+      systemd:
+        state: started
+        name: atomic-openshift-node
+    - debug: msg="Pausing 1 minute start atomic-openshift-node"
+ 
+    - pause: seconds=60        
+        
+- hosts: localhost
+  name: make cicd-dev projects global
+  tasks:
+  - name: make cicd-dev as global to deploy in various projects using pipeline
+    shell: oc adm pod-network make-projects-global cicd-dev

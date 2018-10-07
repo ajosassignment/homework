@@ -1,0 +1,45 @@
+- hosts: all
+  name: Prepare GUID env variable across all hosts
+  tasks:
+    - name: All GUID env variable
+      shell: export GUID=`hostname | cut -d"." -f2`; echo "export GUID=$GUID" >> $HOME/.bashrc
+
+- hosts: localhost
+  name: Generate Inventory Hosts File
+  tasks:
+    - name: Generate Inventory script
+      script: hostssetup.sh
+
+- hosts: nodes
+  name: Verify Docker
+  tasks:
+    - name: docker restart
+      shell: systemctl restart docker
+      
+- hosts: nfs
+  name: Verify NFS Shared Volumes on Hosts 
+  tasks: 
+    - name: NFS volumes are shared
+      shell: exportfs
+
+- hosts: localhost
+  name: Install a list of openshift packages  
+  tasks:
+    - name: required packages are present
+      yum:
+        name:
+          - atomic-openshift-utils
+          - atomic-openshift-clients
+        state: present
+        
+- hosts: localhost
+  name: Install prerequistes
+  tasks:
+    - name: Execute prerequistes script
+      script: prereqcheck.sh
+
+- hosts: localhost
+  name: Execute the openshift-ansible Deployer
+  tasks:
+    - name: Execute install script
+      script: deploy.sh 
