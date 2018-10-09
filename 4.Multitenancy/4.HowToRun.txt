@@ -5,4 +5,7 @@
 ansible-playbook create-multitenancy.yaml
 
 
+ansible-playbook create-clients.yaml
+
+
 
