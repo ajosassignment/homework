@@ -1,0 +1,59 @@
+
+- hosts: all
+  name: Prepare GUID env variable across all hosts
+  tasks:
+    - name: All GUID env variable
+      shell: export GUID=`hostname | cut -d"." -f2`; echo "export GUID=$GUID" >> $HOME/.bashrc
+
+- hosts: masters
+  name: create multiple users
+  tasks:
+    - name: Create users
+      shell: |      
+        htpasswd -b /etc/origin/master/htpasswd amy r3dh4t1!
+        htpasswd -b /etc/origin/master/htpasswd brian  r3dh4t1!
+        htpasswd -b /etc/origin/master/htpasswd betty r3dh4t1!
+
+        
+- hosts: masters
+  name: create multiple users
+  tasks:
+    - name: Create users
+      shell: |      
+        htpasswd -b /etc/origin/master/htpasswd amy r3dh4t1!
+        htpasswd -b /etc/origin/master/htpasswd brian  r3dh4t1!
+        htpasswd -b /etc/origin/master/htpasswd betty r3dh4t1!
+        
+        
+- hosts: localhost
+  name: create multiple clients
+  tasks:
+    - name: Create alpha clients
+      shell: |  
+        oc config set-credentials amy --password=r3dh4t1!
+        oc config set-credentials andrew --password=r3dh4t1!
+        oc config set-context alpha --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=amy --namespace=alpha-corp
+        oc config set-context alpha --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=andrew --namespace=alpha-corp
+        oc config use-context alpha
+        oc config set contexts.alpha.namespace alpha-corp
+
+- hosts: localhost
+  name: create multiple clients
+  tasks:
+    - name: Create beta clients
+      shell: | 
+        oc config set-credentials brian --password=r3dh4t1!
+        oc config set-credentials betty --password=r3dh4t1!
+        oc config set-context beta --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=brian --namespace=beta-corp
+        oc config set-context beta --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=betty --namespace=beta-corp
+        oc config use-context beta
+        oc config set contexts.beta.namespace beta-corp
+
+- hosts: localhost
+  name: create common client
+  tasks:
+    - name: Create common clients
+      shell: | 
+        oc config set-context common --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user= --namespace=commonproject
+        oc config use-context common
+        oc config set contexts.common.namespace commonproject

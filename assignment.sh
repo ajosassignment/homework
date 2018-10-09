@@ -32,7 +32,18 @@ cd $curr_path/4.Multitenancy
 
 ansible-playbook create-multitenancy.yaml
 
+#create multiple clients
+
+cd $curr_path/4.Multitenancy
+
+ansible-playbook create-clients.yaml
+
 #HPA working on production deployment of openshift-tasks in project tasks-prod
 
 cd $curr_path/3.CICD
+
 ansible-playbook create-task-hpa.yaml
+
+
+
+
