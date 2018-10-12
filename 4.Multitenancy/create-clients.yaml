@@ -34,7 +34,7 @@
         oc config set-credentials andrew --password=r3dh4t1!
         oc config set-context alpha --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=amy --namespace=alpha-corp
         oc config set-context alpha --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=andrew --namespace=alpha-corp
-        oc config use-context alpha
+        #oc config use-context alpha
         oc config set contexts.alpha.namespace alpha-corp
 
 - hosts: localhost
@@ -46,8 +46,14 @@
         oc config set-credentials betty --password=r3dh4t1!
         oc config set-context beta --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=brian --namespace=beta-corp
         oc config set-context beta --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user=betty --namespace=beta-corp
-        oc config use-context beta
+        #oc config use-context beta
         oc config set contexts.beta.namespace beta-corp
+
+- hosts: localhost
+  name: create template clients
+  tasks:
+    - name: Create template in tasks-build project
+      shell: oc create -f my-python-template.yaml -n tasks-build
 
 - hosts: localhost
   name: create common client
@@ -55,5 +61,5 @@
     - name: Create common clients
       shell: | 
         oc config set-context common --cluster=loadbalancer-$GUID-example-opentlc-com:443 --user= --namespace=commonproject
-        oc config use-context common
+        #oc config use-context common
         oc config set contexts.common.namespace commonproject

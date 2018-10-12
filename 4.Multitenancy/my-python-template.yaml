@@ -1,0 +1,119 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: my-python-template
+objects:
+
+  - kind: ImageStream
+    apiVersion: image.openshift.io/v1
+    metadata:
+     labels:
+      app: pyapp
+    name: pyapp
+    namespace: tasks-build
+   
+  - kind: BuildConfig
+    apiVersion: build.openshift.io/v1
+    metadata:
+      labels:
+        app: pyapp
+      name: pyapp
+      namespace: tasks-build
+    spec:
+      output:
+        to:
+          kind: ImageStreamTag
+          name: 'pyapp:latest'
+      runPolicy: Serial
+      source:
+        git:
+          ref: master
+          uri: 'https://github.com/akjena/openshiftrepo.git'
+        type: Git
+      strategy:
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: 'python:3.6'
+            namespace: openshift
+        type: Source
+      triggers:
+        - generic:
+            secret: 4e5370109cb01f2a
+          type: Generic
+        - github:
+            secret: b599df5aa5d0648e
+          type: GitHub
+          
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
+    metadata:
+      labels:
+        app: pyapp
+      name: pyapp
+      namespace: tasks-build
+    spec:
+      replicas: 1
+      selector:
+        deploymentconfig: pyapp
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: pyapp
+            deploymentconfig: pyapp
+        spec:
+          containers:
+              name: pyapp
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+      test: false
+      triggers:
+        - imageChangeParams:
+            automatic: true
+            containerNames:
+              - pyapp
+            from:
+              kind: ImageStreamTag
+              name: 'pyapp:latest'
+              namespace: tasks-build
+          type: ImageChange
+        - type: ConfigChange
+        
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      labels:
+        app: pyapp
+      name: pyapp
+      namespace: tasks-build
+    spec:
+       ports:
+       - name: 8080-tcp
+         port: 8080
+         protocol: TCP
+         targetPort: 8080
+       selector:
+         deploymentconfig: pyapp
+         
+  - kind: Route
+    apiVersion: route.openshift.io/v1
+    metadata:
+      labels:
+      app: pyapp
+      name: pyapp
+      namespace: tasks-build
+    spec:
+      port:
+       targetPort: 8080-tcp
