@@ -10,9 +10,9 @@
           oc adm policy add-role-to-user edit andrew
           
       - debug: msg="Jenkins login and password is admin , password"
-      - debug: msg="Pausing for 1 minute for build to complete"
+      - debug: msg="Pausing for 2 minute for jenkins build to complete"
  
-      - pause: seconds=60
+      - pause: seconds=120
       
 - hosts: localhost
   tasks:
@@ -80,7 +80,7 @@
           
       - debug: msg="Pausing for 1 minute for build to complete initial deployment in dev, test and prod project"
  
-      - pause: seconds=60          
+      - pause: seconds=90          
       
 - hosts: localhost      
   tasks:
@@ -105,10 +105,10 @@
         shell: oc create -f assign-pipeline-demo.yaml -n cicd-dev        
 
       - debug: msg="Pausing for 1 minute for deploy pipeline task to complete" 
-      - pause: seconds=30
+      - pause: seconds=60
       
       - name: Start pipeline
         shell: oc start-build assign-pipeline-demo -n cicd-dev
         
       - debug: msg="Pipe line build in progress. Please check status in tasks-build project."
-      - pause: seconds=90
+      - pause: seconds=120
