@@ -21,10 +21,10 @@ ansible-playbook postdeploy.yaml
 
 cd $curr_path/3.CICD
 
+ansible-playbook create-pipeline-proj.yaml
+
 #wait for couple of  minute for CICD task to complete
 sleep 2m
-
-ansible-playbook create-pipeline-proj.yaml
 
 #create multitenancy
 
