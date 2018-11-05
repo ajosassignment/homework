@@ -54,9 +54,9 @@
           oc create -f tasks-bc.yaml -n tasks-build
           oc create -f createis.yaml -n tasks-build
           
-      - debug: msg="Pausing for 1 minute for build to complete in tasks-build project"
+      - debug: msg="Pausing for 2 minute for build to complete in tasks-build project"
  
-      - pause: seconds=60
+      - pause: seconds=120
       
 - hosts: localhost          
   tasks:
